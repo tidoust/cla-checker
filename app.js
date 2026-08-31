@@ -12,17 +12,33 @@ import http from 'node:http';
 // Load environment variables from .env file if one is defined
 dotenv.config({ quiet: true });
 
-const appId = process.env.APP_ID;
-if (!appId) {
+const config = {
+  appId: process.env.APP_ID,
+  serverPort: process.env.PORT || 3000,
+  webhookPath: process.env.WEBHOOK_PATH || '/api/webhook',
+  webhookSecret: process.env.WEBHOOK_SECRET,
+  claRepo: process.env.CLA_REPOSITORY ?? 'w3c/cla-commitments',
+  claIssueTemplate: process.env.CLA_ISSUE_TEMPLATE ?? 'cla-commitment.yml',
+  repoAnchor: process.env.REPOSITORY_ANCHOR ?? '### Project repository'
+};
+
+[config.claRepoOwner,config.claRepoName] = config.claRepo.split('/');
+
+if (!config.appId) {
   console.error('The APP_ID configuration parameter is missing.');
   console.error('See the README for details.');
   process.exit(1);
 }
 
+if (!config.webhookSecret) {
+  log(`The WEBHOOK_SECRET configuration parameter is missing.`);
+  console.error('See the README for details.');
+  process.exit(1);
+}
+
 const privateKeyPath = process.env.PRIVATE_KEY_PATH ?? 'key.pem';
-let privateKey;
 try {
-  privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+  config.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 }
 catch {
   console.error(`Could not find a private key to authenticate with the GitHub app at ${privateKeyPath}.`);
@@ -31,23 +47,9 @@ catch {
   process.exit(1);
 }
 
-const secret = process.env.WEBHOOK_SECRET;
-if (!secret) {
-  log(`The WEBHOOK_SECRET configuration parameter is missing.`);
-  console.error('See the README for details.');
-  process.exit(1);
-}
-
-const claRepo = process.env.CLA_REPOSITORY ?? 'w3c/cla-commitments';
-const [claRepoOwner,claRepoName] = claRepo.split('/');
-const claIssueTemplate = process.env.CLA_ISSUE_TEMPLATE ?? 'cla-commitment.yml';
-
-const repoAnchor = process.env.REPOSITORY_ANCHOR ?? '### Project repository';
-
 const prMessagePath = process.env.NEED_CLA_MESSAGE_PATH ?? 'need-cla-message.md';
-let prMessage;
 try {
-  prMessage = fs.readFileSync(prMessagePath, 'utf8');
+  config.prMessage = fs.readFileSync(prMessagePath, 'utf8');
 }
 catch {
   console.error(`could not find a message to request a CLA commitment in ${prMessagePath}.`)
@@ -75,10 +77,10 @@ const rePR = /https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/;
 // Create an Octokit client authenticated as a GitHub App
 const MyOctokit = Octokit.plugin(paginateRest);
 const app = new App({
-  appId,
-  privateKey,
+  appId: config.appId,
+  privateKey: config.privateKey,
   webhooks: {
-    secret
+    secret: config.webhookSecret
   },
   Octokit: MyOctokit
 });
@@ -90,7 +92,7 @@ console.log();
 
 // Comments from the bot on a PR are made under the app's slug name
 // with a "[bot]" suffix.
-const appLogin = appData.slug + '[bot]';
+config.appLogin = appData.slug + '[bot]';
 
 // Handle event notifications.
 // The list of possible events and related action types is documented at:
@@ -106,7 +108,7 @@ const webhooksEvents = [
   'issue_comment.edited'
 ];
 app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
-  if (payload.repository.full_name === claRepo) {
+  if (payload.repository.full_name === config.claRepo) {
     // In the repository that collects CLA commitments, look at issues that are
     // both closed and locked (typically happens after the list of CLA
     // commitments gets updated).
@@ -123,13 +125,13 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
       log(`- author: ${payload.issue.user.login}`);
 
       const body = payload.issue.body;
-      const startPos = body.indexOf(repoAnchor);
+      const startPos = body.indexOf(config.repoAnchor);
       if (startPos === -1) {
         log('- could not find the project repository in the issue');
         return;
       }
-      const endPos = body.indexOf('###', startPos + repoAnchor.length);
-      const repositorySection = body.substring(startPos + repoAnchor.length, endPos);
+      const endPos = body.indexOf('###', startPos + config.repoAnchor.length);
+      const repositorySection = body.substring(startPos + config.repoAnchor.length, endPos);
       const match = repositorySection.trim().match(/([^\s]+)\/([^\s]+)/);
       if (!match) {
         log('- could not find a repository in the project repository section');
@@ -158,7 +160,7 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
     // Note: The checker skips over comments by itself since that typically
     // means that it just added a need CLA comment.
     if ((payload.pull_request || payload.issue?.pull_request) &&
-        (payload.sender.login !== appLogin)) {
+        (payload.sender.login !== config.appLogin)) {
       log(`New PR event from ${payload.repository.full_name}`);
       const pr = payload.pull_request?.html_url ??
         payload.issue.pull_request.html_url;
@@ -175,12 +177,13 @@ app.webhooks.onError((error) => {
 });
 
 // Launch the web server to listen for GitHub webhooks
-const port = process.env.PORT || 3000;
-const path = '/api/webhook';
-const localWebhookUrl = `http://localhost:${port}${path}`;
+const localWebhookUrl = `http://localhost:${config.serverPort}${config.webhookPath}`;
 
-const middleware = createNodeMiddleware(app.webhooks, { path });
-http.createServer(middleware).listen(port, () => {
+const middleware = createNodeMiddleware(
+  app.webhooks,
+  { path: config.webhookPath }
+);
+http.createServer(middleware).listen(config.serverPort, () => {
   console.log(`Server is listening for events at: ${localWebhookUrl}`);
   console.log('Press Ctrl + C to quit.');
   console.log();
@@ -253,7 +256,7 @@ async function checkPRContributor(pr, octokit) {
         'POST /repos/{owner}/{repo}/statuses/{sha}', {
         owner, repo, sha,
         state: 'success',
-        target_url: `https://github.com/${claRepo}/blob/main/${owner}/${repo}.json`,
+        target_url: `https://github.com/${config.claRepo}/blob/main/${owner}/${repo}.json`,
         description: `Agreement found for @${contributor.name}.`,
         context: 'Contributor agreement'
       });
@@ -273,9 +276,9 @@ async function checkPRContributor(pr, octokit) {
         // "repository" input field and a "pr" input field.      
         log(`- add need CLA comment`);
         const issueTitle = encodeURIComponent(`@${contributor.name} approves the CLA for \`${repository}\``);
-        const claUrl = `https://github.com/${claRepo}/issues/new?` +
+        const claUrl = `https://github.com/${config.claRepo}/issues/new?` +
           [
-            `template=${claIssueTemplate}`,
+            `template=${config.claIssueTemplate}`,
             `title=${issueTitle}`,
             `repository=${encodeURIComponent(repository)}`,
             `pr=${encodeURIComponent(prUrl)}`
@@ -283,7 +286,7 @@ async function checkPRContributor(pr, octokit) {
         const res = await octokit.rest.issues.createComment({
           owner, repo,
           issue_number: pull_number,
-          body: prMessage
+          body: config.prMessage
             .replace(/\{\{username\}\}/g, contributor.name)
             .replace(/\{\{approveClaUrl\}\}/g, claUrl)
         });
@@ -336,8 +339,8 @@ async function getCommitmentsFor(repository, octokit) {
   try {
     log(`- look for commitments for ${repository}`);
     const res = await octokit.rest.repos.getContent({
-      owner: claRepoOwner,
-      repo: claRepoName,
+      owner: config.claRepoOwner,
+      repo: config.claRepoName,
       path: repository + '.json'
     });
 
@@ -369,7 +372,7 @@ async function getCommentFromChecker(owner, repo, issue_number, octokit) {
     octokit.rest.issues.listComments,
     { owner, repo, issue_number, per_page: 100 },
     (response, done) => {
-      if (response.data.find(issue => issue.user.login === appLogin)) {
+      if (response.data.find(issue => issue.user.login === config.appLogin)) {
         done();
       }
       return response.data;
@@ -377,7 +380,7 @@ async function getCommentFromChecker(owner, repo, issue_number, octokit) {
   );
   if (comments.length > 0) {
     const lastComment = comments[comments.length - 1];
-    if (lastComment.user.login === appLogin) {
+    if (lastComment.user.login === config.appLogin) {
       return lastComment;
     }
   }
