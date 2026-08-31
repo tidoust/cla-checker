@@ -17,9 +17,7 @@ The following sections explain the workflows for:
 ## Recording CLA commitments
 
 > [!IMPORTANT]
-> The CLA checker is not directly involved in this part of the workflow. Automation rather takes place through a GitHub workflow in the repository that collects CLA commitments.
-
-CLA commitments are collected through issues in a dedicated repository, [`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) for the W3C Open Source Program.
+> The CLA checker is not directly involved in this part of the workflow. Automation rather takes place through a GitHub workflow in the [`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) repo, which is used to record all CLA commitments made as part of the W3C Open Source Program.
 
 * To make a CLA commitment for a given repo, a single contributor raises an issue in this repo using the appropriate issue template.
 * The W3C Open Source Program maintainer reviews the issue and approves it by adding an "approved" label. 
