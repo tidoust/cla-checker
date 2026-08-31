@@ -2,19 +2,17 @@
 
 For its pilot [W3C Open Source Program](https://github.com/w3c-oss/open-source-program#w3c-open-source-program), W3C asks all contributors to a Project to agree to the [W3C Open Source Individual Contributor License Agreement](https://www.w3.org/2026/07/w3c-open-source-icla.html) (referred to as the "CLA" below) so that W3C may (if necessary) relicense the full set of contributions.
 
-Authenticated GitHub users agree to the CLA for a Project Repo by:
+Authenticated GitHub users make a CLA commitment for a Project Repo that has [enabled the CLA checker](#how-to-enable-the-CLA-checker-in-a-project-repo) by:
 
 * visiting a second repo (the [`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) repo), then
-* opening an issue with the appropriate template and checking the appropriate boxes ([`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) to make a CLA commitment.
+* opening an issue with the appropriate template and checking the appropriate boxes ([`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) to make the commitment.
 
-Upon staff approval, the agreement is recorded in the [`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) repo and the users may proceed make contributions to the selected Project Repo.
+After staff review (e.g., to avoid spam), the commitment is recorded in the [`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) repo and the users may proceed make contributions to the selected Project Repo.
 
 The following sections explain the workflows for:
 
 * [Recording CLA commitments](#recording-CLA-agreements)
 * [User journey to record a commitment](#user-journey-to-record-a-commitment)
-
-**Note:** A prerequisite for these workflows is that the CLA app has been installed in a Project Repo; see [how to enable the CLA checker in a Project Repo](#how-to-enable-the-CLA-checker-in-a-project-repo).
 
 ## Recording CLA commitments
 
