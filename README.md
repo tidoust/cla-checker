@@ -64,10 +64,10 @@ To enable the CLA checker in a repository, [install](https://docs.github.com/en/
 ### What were the design goals of this project?
 
 * Reduce the friction for Projects of collecting CLA commitments. To that end, we:
-   * We use a GitHub app to make installation easy and to avoid adding noise to a Project Repo
-   * We use GitHub issues and templates to streamline accepting commitments from authenticated GitHub husers.
+   * Use a GitHub app to make installation easy and to avoid adding noise to a Project Repo.
+   * Use GitHub issues and templates to streamline accepting commitments from authenticated GitHub users.
 * Make CLA commitments non-repudiable. To that end we:
-   * Record CLA commitments in a repo managed by the W3C staff (thus, strongly permission protected)
+   * Record CLA commitments in a repo managed by the W3C staff (thus, strongly permission protected).
    * Leverage features (e.g., locking of issues) to minimize the risk that people will attempt to change history.
    * Rely on GitHub history to make it easy to audit situations where changes do occur.
    * Rely on the GitHub `id`. Contributors may change their GitHub username at any time, but their GitHub `id` remains the same. As such, any contribution prior to a username change can continue to be attributed to them and linked to a CLA commitment. The contributor does not need to approve the CLA again with their new username.
