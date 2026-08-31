@@ -214,7 +214,7 @@ async function checkPRContributor(pr, octokit) {
   if (typeof pr === 'string') {
     try {
       prUrl = pr;
-      [, owner, repo, pull_number] = pr.match(rePR);
+      [, owner, repo, pull_number] = prUrl.match(rePR);
       const res = await octokit.rest.pulls.get({ owner, repo, pull_number });
       sha = res.data.head.sha;
       contributor.id = res.data.user.id;
@@ -228,9 +228,7 @@ async function checkPRContributor(pr, octokit) {
   }
   else {
     prUrl = pr.html_url;
-    owner = pr.head.repo.owner.login;
-    repo = pr.head.repo.name;
-    pull_number = pr.number;
+    [, owner, repo, pull_number] = prUrl.match(rePR);
     sha = pr.head.sha;
     contributor.id = pr.user.id;
     contributor.name = pr.user.login;
