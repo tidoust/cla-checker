@@ -87,14 +87,29 @@ We need to set up a few more things from that page after registration:
 
 ### Configuration parameters
 
-> [!NOTE]
-> TODO: document the configuration parameters. Note default values.
+Configuration parameters need to be specified as environment variables, or in a `.env` file. To create a `.env` file, copy and rename the `.env.sample` file.
 
-- Server port
-- Server path
-- Name of the repository that contains CLA commitments. This must match the name of the repository on which the CLA collector app is installed.
-- Webhook secret. This must match the secret provided by GitHub during creation of the CLA checker app.
-- ...
+| Environment variable | Required | Default value            | Quick description             |
+| -------------------- | -------- | ------------------------ | ------------------------------|
+| `APP_ID`             | yes      |                          | GitHub App ID                 |
+| `WEBHOOK_SECRET`     | yes      |                          | GitHub App webhook secret     |
+| `PRIVATE_KEY_PATH`   | no       | `key.pem`                | GitHub App private key file   |
+| `NEED_CLA_MSG_PATH`  | no       | `need-cla-message.md`    | "Need CLA" message template   |
+| `CLA_REPOSITORY`     | no       | `w3c-oss/cla-commitments`| Repo with CLA commitments     |
+| `CLA_ISSUE_TEMPLATE` | no       | `cla-commitment.yml`     | CLA commitment issue template |
+| `CLA_ISSUE_ANCHOR`   | no       | `### Project repository` | Issue section with repo name  |
+| `SERVER_PORT`        | no       | `3000`                   | HTTP port for the server      |
+| `WEBHOOK_PATH`       | no       | `/api/webhook`           | Webhook path                  |
+
+Two parameters (and one file) are needed:
+- `APP_ID` must match the App ID in the GitHub app info page.
+- `WEBHOOK_SECRET` must match the Webhook secret set in the GitHub app info page. It allows the server app to authenticate notifications it receives from GitHub.
+- `PRIVATE_KEY_PATH` must target a `.pem` file that contains the Private key generated in the GitHub app info page. The key allows the server app to authenticate to GitHub.
+
+Additional notes:
+- `CLA_ISSUE_TEMPLATE` is the name of the issue template in the repository that records the CLA commitments. It is used to create a proper "Approve CLA commitment" link when the CLA checker asks the contributor to approve the CLA.
+- `CLA_ISSUE_ANCHOR` is the name of the section that contains the repository for which the CLA commitment is made in the issue that records a CLA commitment. It is used to revalidate all open PRs from the contributor when a CLA commitment gets recorded. This anchor needs to match the relevant section title in the CLA commitment issue template.
+- `WEBHOOK_PATH` sets the callback URL. Make sure that the Webhook URL in the GitHub app info page is the right one.
 
 
 ## How to enable the CLA checker in a repository

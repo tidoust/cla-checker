@@ -14,12 +14,12 @@ dotenv.config({ quiet: true });
 
 const config = {
   appId: process.env.APP_ID,
-  serverPort: process.env.PORT || 3000,
+  serverPort: process.env.SERVER_PORT || 3000,
   webhookPath: process.env.WEBHOOK_PATH || '/api/webhook',
   webhookSecret: process.env.WEBHOOK_SECRET,
-  claRepo: process.env.CLA_REPOSITORY ?? 'w3c/cla-commitments',
+  claRepo: process.env.CLA_REPOSITORY ?? 'w3c-oss/cla-commitments',
   claIssueTemplate: process.env.CLA_ISSUE_TEMPLATE ?? 'cla-commitment.yml',
-  repoAnchor: process.env.REPOSITORY_ANCHOR ?? '### Project repository'
+  claIssueAnchor: process.env.CLA_ISSUE_ANCHOR ?? '### Project repository'
 };
 
 [config.claRepoOwner,config.claRepoName] = config.claRepo.split('/');
@@ -47,7 +47,7 @@ catch {
   process.exit(1);
 }
 
-const prMessagePath = process.env.NEED_CLA_MESSAGE_PATH ?? 'need-cla-message.md';
+const prMessagePath = process.env.NEED_CLA_MSG_PATH ?? 'need-cla-message.md';
 try {
   config.prMessage = fs.readFileSync(prMessagePath, 'utf8');
 }
@@ -125,13 +125,15 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
       log(`- author: ${payload.issue.user.login}`);
 
       const body = payload.issue.body;
-      const startPos = body.indexOf(config.repoAnchor);
+      const startPos = body.indexOf(config.claIssueAnchor);
       if (startPos === -1) {
         log('- could not find the project repository in the issue');
         return;
       }
-      const endPos = body.indexOf('###', startPos + config.repoAnchor.length);
-      const repositorySection = body.substring(startPos + config.repoAnchor.length, endPos);
+      const endPos = body.indexOf('###', startPos + config.claIssueAnchor.length);
+      const repositorySection = (endPos > 0) ?
+        body.substring(startPos + config.claIssueAnchor.length, endPos):
+        body.substring(startPos + config.claIssueAnchor.length);
       const match = repositorySection.trim().match(/([^\s]+)\/([^\s]+)/);
       if (!match) {
         log('- could not find a repository in the project repository section');
