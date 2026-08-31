@@ -70,3 +70,7 @@ To enable the CLA checker in a repository, [install](https://docs.github.com/en/
 > [!NOTE]
 > You can [review and disable](https://docs.github.com/en/apps/using-github-apps/reviewing-and-modifying-installed-github-apps#blocking-access) the CLA checker GitHub app on a repository at any time.
 > 
+
+## For W3C Open Source Project staff
+
+See [detailed tool information](tool-details.md) for more information about setting up the app itself, configuring the CLA commitments repo, etc.
