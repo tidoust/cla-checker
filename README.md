@@ -10,7 +10,7 @@ The CLA checker receives a notification from GitHub (through an [HTTP webhook](h
 
 Count as having approved the CLA any user, identified by their GitHub account, who raised an issue with the appropriate template in a dedicated repository and checked the appropriate boxes ([`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) for the W3C Open Source Program). See [Collecting CLA commitments](#collecting-cla-commitments) below.
 
-The status of the PR gets changed depending on the result of the check. It it's acceptable, it will get changed to green; if not, the PR will get a red cross, and the CLA checker will add a comment to the PR to invite the contributor to follow a ling to approve the CLA.
+The status of the PR gets changed depending on the result of the check. It it's acceptable, it will get changed to green; if not, the PR will get a red cross, and the CLA checker will add a comment to the PR to invite the contributor to follow a link to approve the CLA.
 
 To approve the CLA, the contributor needs to create an issue in the appropriate repository, [`w3c-oss/cla-commitments`](https://github.com/w3c-oss/cla-commitments) for the W3C Open Source Program.
 
