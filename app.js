@@ -42,7 +42,7 @@ const claRepo = process.env.CLA_REPOSITORY ?? 'w3c/cla-commitments';
 const [claRepoOwner,claRepoName] = claRepo.split('/');
 const claIssueTemplate = process.env.CLA_ISSUE_TEMPLATE ?? 'cla-commitment.yml';
 
-const prAnchor = process.env.PR_ANCHOR ?? '### Pull request';
+const repoAnchor = process.env.REPOSITORY_ANCHOR ?? '### Project repository';
 
 const prMessagePath = process.env.NEED_CLA_MESSAGE_PATH ?? 'need-cla-message.md';
 let prMessage;
@@ -123,13 +123,13 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
       log(`- author: ${payload.issue.user.login}`);
 
       const body = payload.issue.body;
-      const startPos = body.indexOf(prAnchor);
+      const startPos = body.indexOf(repoAnchor);
       if (startPos === -1) {
         log('- could not find the project repository in the issue');
         return;
       }
-      const endPos = body.indexOf('###', startPos + prAnchor.length);
-      const repositorySection = body.substring(startPos + prAnchor.length, endPos);
+      const endPos = body.indexOf('###', startPos + repoAnchor.length);
+      const repositorySection = body.substring(startPos + repoAnchor.length, endPos);
       const match = repositorySection.trim().match(/([^\s]+)\/([^\s]+)/);
       if (!match) {
         log('- could not find a repository in the project repository section');
