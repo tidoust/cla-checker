@@ -33,7 +33,7 @@ catch {
 
 const secret = process.env.WEBHOOK_SECRET;
 if (!secret) {
-  console.log(`The WEBHOOK_SECRET configuration parameter is missing.`);
+  log(`The WEBHOOK_SECRET configuration parameter is missing.`);
   console.error('See the README for details.');
   process.exit(1);
 }
@@ -54,6 +54,15 @@ catch {
   console.error('Create the message file and/or adjust the CLA_MESSAGE_PATH configuration parameter.');
   console.error('See the README for details.');
   process.exit(1);
+}
+
+
+/******************************************************************************
+ * Log function
+ *****************************************************************************/
+function log(...msg) {
+  const date = (new Date()).toISOString();
+  console.log(date + ' ' + msg);
 }
 
 
@@ -109,35 +118,35 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
         payload.issue.state === 'closed' &&
         payload.issue?.locked &&
         !['off-topic', 'too heated', 'spam'].includes(payload.issue.active_lock_reason)) {
-      console.log(`New locked issue in the CLA commitments repository`);
-      console.log(`- issue: ${payload.issue.html_url}`);
-      console.log(`- author: ${payload.issue.user.login}`);
+      log(`New locked issue in the CLA commitments repository`);
+      log(`- issue: ${payload.issue.html_url}`);
+      log(`- author: ${payload.issue.user.login}`);
 
       const body = payload.issue.body;
       const startPos = body.indexOf(prAnchor);
       if (startPos === -1) {
-        console.log('- could not find the project repository in the issue');
+        log('- could not find the project repository in the issue');
         return;
       }
       const endPos = body.indexOf('###', startPos + prAnchor.length);
       const repositorySection = body.substring(startPos + prAnchor.length, endPos);
       const match = repositorySection.trim().match(/([^\s]+)\/([^\s]+)/);
       if (!match) {
-        console.log('- could not find a repository in the project repository section');
-        console.log(repositorySection);
+        log('- could not find a repository in the project repository section');
+        log(repositorySection);
         return;
       }
       const [, projectOwner, projectRepo] = match;
-      console.log(`- repository: ${projectOwner}/${projectRepo}`);
+      log(`- repository: ${projectOwner}/${projectRepo}`);
 
       const pullRequests = await octokit.paginate(
         octokit.rest.pulls.list,
         { owner: projectOwner, repo: projectRepo, per_page: 100 },
         response => response.data.filter(pr => pr.user.id === payload.issue.user.id)
       );
-      console.log(`- found ${pullRequests} PRs created by ${payload.issue.user.login}`);
+      log(`- found ${pullRequests} PRs created by ${payload.issue.user.login}`);
       for (const pr of pullRequests) {
-        console.log(`- re-check PR: ${pr.html_url}`);
+        log(`- re-check PR: ${pr.html_url}`);
         await checkPRContributor(pr, octokit);
       }
     }
@@ -150,10 +159,10 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
     // means that it just added a need CLA comment.
     if ((payload.pull_request || payload.issue?.pull_request) &&
         (payload.sender.login !== appLogin)) {
-      console.log(`New PR event from ${payload.repository.full_name}`);
+      log(`New PR event from ${payload.repository.full_name}`);
       const pr = payload.pull_request?.html_url ??
         payload.issue.pull_request.html_url;
-      console.log(`- PR: ${pr}`);
+      log(`- PR: ${pr}`);
       await checkPRContributor(pr, octokit);
     }
   }
@@ -161,6 +170,7 @@ app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
 
 // TODO: Handle errors
 app.webhooks.onError((error) => {
+  log('An unexpected webhook error occurred');
   console.error(error);
 });
 
@@ -206,7 +216,7 @@ async function checkPRContributor(pr, octokit) {
       contributor.name = res.data.user.login;
     }
     catch (error) {
-      console.log('- an error occurred while retrieving PR info');
+      log('- an error occurred while retrieving PR info');
       console.error(error);
       return;
     }
@@ -226,12 +236,12 @@ async function checkPRContributor(pr, octokit) {
     const commitments = await getCommitmentsFor(repository, octokit);
     if (commitments.find(commitment => commitment.id === contributor.id)) {
       // The contributor already approved the CLA
-      console.log(`- ${contributor.name} (id: ${contributor.id}) already approved the CLA for ${repository}`);
+      log(`- ${contributor.name} (id: ${contributor.id}) already approved the CLA for ${repository}`);
 
       // Delete the previous comment from the checker if needed
       const checkerComment = await getCommentFromChecker(owner, repo, pull_number, octokit);
       if (checkerComment) {
-        console.log(`- delete need CLA comment at ${checkerComment.html_url}`);
+        log(`- delete need CLA comment at ${checkerComment.html_url}`);
         await octokit.rest.issues.deleteComment({
           owner, repo, comment_id: checkerComment.id
         });
@@ -251,17 +261,17 @@ async function checkPRContributor(pr, octokit) {
     else {
       // CLA Commitment needed
       // Check whether the CLA checker bot already issued a comment
-      console.log(`- ${contributor.name} (id: ${contributor.id}) needs to approve the CLA for ${repository}`);
+      log(`- ${contributor.name} (id: ${contributor.id}) needs to approve the CLA for ${repository}`);
       const checkerComment = await getCommentFromChecker(owner, repo, pull_number, octokit);
       let checkerCommentUrl = null;
       if (checkerComment) {
         checkerCommentUrl = checkerComment.html_url;
-        console.log(`- need CLA comment already exists: ${checkerCommentUrl}`);
+        log(`- need CLA comment already exists: ${checkerCommentUrl}`);
       }
       else {
         // Note: the CLA checker expects the CLA issue template to have a
         // "repository" input field and a "pr" input field.      
-        console.log(`- add need CLA comment`);
+        log(`- add need CLA comment`);
         const issueTitle = encodeURIComponent(`@${contributor.name} approves the CLA for \`${repository}\``);
         const claUrl = `https://github.com/${claRepo}/issues/new?` +
           [
@@ -278,7 +288,7 @@ async function checkPRContributor(pr, octokit) {
             .replace(/\{\{approveClaUrl\}\}/g, claUrl)
         });
         checkerCommentUrl = res.data.html_url
-        console.log(`- need CLA comment added: ${checkerCommentUrl}`);
+        log(`- need CLA comment added: ${checkerCommentUrl}`);
       }
 
       // Make sure that the last PR commit has a "failure" commit status for
@@ -294,13 +304,13 @@ async function checkPRContributor(pr, octokit) {
     }
   }
   catch (error) {
-    console.log('- could not check PR, an error occurred:');
+    log('- could not check PR, an error occurred:');
     console.error(error);
     try {
       // TODO: Don't update the previous status if one was already set.
       // Reporting the error should only be useful when a new commit gets added
       // to the PR.
-      console.log('- try to flag the PR with an error status');
+      log('- try to flag the PR with an error status');
       await octokit.request(
         'POST /repos/{owner}/{repo}/statuses/{sha}', {
         owner, repo, sha,
@@ -324,7 +334,7 @@ async function checkPRContributor(pr, octokit) {
 async function getCommitmentsFor(repository, octokit) {
   let commitments = [];
   try {
-    console.log(`- look for commitments for ${repository}`);
+    log(`- look for commitments for ${repository}`);
     const res = await octokit.rest.repos.getContent({
       owner: claRepoOwner,
       repo: claRepoName,
@@ -340,7 +350,7 @@ async function getCommitmentsFor(repository, octokit) {
     // exist yet.
     if (error.response) {
       if (error.response.status !== 404) {
-        console.error(`Error! Status: ${error.response.status}. Message: ${error.response.data.message}`);
+        console.error(`Got a ${error.response.status} response from GitHub. Message: ${error.response.data.message}`);
       }
     }
     else {
