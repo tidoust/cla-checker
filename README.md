@@ -52,14 +52,14 @@ The pull request is not merged until the user has made a CLA commitment.
 
 The CLA checker receives a notification from GitHub (through the same HTTP webhook) whenever an issue gets closed in the repository that collects CLA commitments. If that issue recorded a new CLA commitment for a repository, the CLA checker checks again the pull requests from the same contributor in that repository (if any).
 
-## How to enable the CLA checker in a Project Repo
+## FAQ
+
+### How do I use this checker in my Project Repo?
 
 To enable the CLA checker in a repository, [install](https://docs.github.com/en/apps/using-github-apps/installing-your-own-github-app) the CLA checker GitHub app in it.
 
 > [!NOTE]
 > You can [review and disable](https://docs.github.com/en/apps/using-github-apps/reviewing-and-modifying-installed-github-apps#blocking-access) the CLA checker GitHub app on a repository at any time.
-
-## FAQ
 
 ### What were the design goals of this project?
 
