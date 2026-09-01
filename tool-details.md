@@ -8,7 +8,7 @@ To deploy an instance of the CLA checker:
 
 1. Clone this repository
 2. Install dependencies through `npm ci`
-3. Create a `.env` file with the appropriate [configuration parameters](#configuration-parameters)
+3. Set the appropriate [environment variables](#configuration-parameters). They may be provided in a `.env` file.
 4. Run the server with `npm run server`.
 
 > [!NOTE]  
