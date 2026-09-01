@@ -60,15 +60,6 @@ catch {
 
 
 /******************************************************************************
- * Log function
- *****************************************************************************/
-function log(...msg) {
-  const date = (new Date()).toISOString();
-  console.log(date + ' ' + msg);
-}
-
-
-/******************************************************************************
  * Main server loop
  *****************************************************************************/
 // Regular expression used to match PR URLs
@@ -140,6 +131,15 @@ http.createServer(middleware).listen(config.serverPort, () => {
 /******************************************************************************
  * Helper functions
  *****************************************************************************/
+/**
+ * Log function that prefixes messages with the date to ease debugging when
+ * something goes wrong.
+ */
+function log(...msg) {
+  const date = (new Date()).toISOString();
+  console.log(date + ' ' + msg);
+}
+
 /**
  * Handle an event that takes place in the repository that collects CLA
  * commitments, typically events that end up with a closed and locked issue,
