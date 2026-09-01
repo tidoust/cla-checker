@@ -149,7 +149,8 @@ http.createServer(middleware).listen(config.serverPort, () => {
  * API).
  */
 async function handleCommitmentEvent(octokit, payload) {
-  if (!payload.issue ||
+  if ((payload.action !== 'closed' && payload.action !== 'locked') ||
+      !payload.issue ||
       !payload.issue.locked ||
       payload.issue.state !== 'closed' ||
       ['off-topic', 'too heated', 'spam'].includes(payload.issue.active_lock_reason)) {
