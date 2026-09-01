@@ -9,7 +9,7 @@ To deploy an instance of the CLA checker:
 1. Clone this repository
 2. Install dependencies through `npm ci`
 3. Set the appropriate [environment variables](#configuration-parameters). They may be provided in a `.env` file.
-4. Run the server with `npm run server`.
+4. Run the server with `node app.js`.
 
 > [!NOTE]  
 > To test the CLA checker locally, you'll need to create a public facing URL, e.g., using [smee.io](https://smee.io/) or [ngrok](https://ngrok.com/).
