@@ -1,6 +1,6 @@
 # Tool details for the W3C Open Source Program Maintainers
 
-The CLA checker is a Node.js HTTP server app that exposes a webhook. 
+The CLA checker is a Node.js HTTP server app that exposes a webhook that receives notifications about specific GitHub repository events.
 
 ## Deploying the server
 
@@ -22,11 +22,11 @@ In the registration form:
 
 1. Set the GitHub App name to `W3C Open Source CLA checker` (any name would work in practice)
 2. Enter a description
-3. Set the Homepage URL to the URL of the server: `https://[server]`.
+3. Set the Homepage URL to some URL that describes the GitHub App, typically: `https://github.com/w3c-oss/cla-checker`.
 4. Make sure Webhook is active and set the URL to `https://[server]/api/webhook`.
 5. Create a secret password.
-6. In "Permissions", give the App read-only permissions for "Contents", and read/write permissions for "Issues", "Pull requests", and "Commit statuses" (note: this will also automatically give it read-only permissions for Metadata)
-7. In "Subscribe to events", select "Issues", "Issue comment", and "Pull request".
+6. In "Permissions", give the App read-only permissions for "Contents", and read/write permissions for "Commit statuses", "Issues", "Pull requests" (note: this will also automatically give it read-only permissions for Metadata)
+7. In "Subscribe to events", select "Issue comment", "Issues", "Pull request" and "Pull request review".
 
 Leave the other configuration settings to their default values.
 
@@ -35,9 +35,11 @@ Leave the other configuration settings to their default values.
 
 We need to set up a few more things from that page after registration:
 
-1. Generate a private key under the "Private keys" section. This should automatically make you download a `.pem` file with the newly generated private key.
-2. Upload that private key file to the server (see [Configuration parameters](#configuration parameters) below).
-3. Choose "Install app" in the main menu (should be on the top left). Choose the org account on which to install the CLA checker. Choose "only select repositories" and select the first repository on which to install the app.
+1. Upload an image for the GitHub App in the "Display information" section. This image will appear in the issue comment that the CLA checker may write as well as in the PR check status. GitHub will use your, or the organization's, image otherwise, which may confuse users.
+2. Generate a private key under the "Private keys" section. This should automatically make you download a `.pem` file with the newly generated private key.
+3. Upload that private key file to the server (see [Configuration parameters](#configuration parameters) below).
+4. Choose "Install app" in the main menu (should be on the top left). Choose the org account on which to install the CLA checker. Choose "only select repositories" and select the first repository on which to install the app (typically the one that holds CLA commitments).
+
 
 ## Installing the CLA checker in the CLA commitments repository
 
@@ -68,4 +70,3 @@ Additional notes:
 - `CLA_ISSUE_TEMPLATE` is the name of the issue template in the repository that records the CLA commitments. It is used to create a proper "Approve CLA commitment" link when the CLA checker asks the contributor to approve the CLA.
 - `CLA_ISSUE_ANCHOR` is the name of the section that contains the repository for which the CLA commitment is made in the issue that records a CLA commitment. It is used to revalidate all open PRs from the contributor when a CLA commitment gets recorded. This anchor needs to match the relevant section title in the CLA commitment issue template.
 - `WEBHOOK_PATH` sets the callback URL. Make sure that the Webhook URL in the GitHub app info page is the right one.
-
