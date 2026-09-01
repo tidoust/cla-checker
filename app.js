@@ -107,72 +107,12 @@ const webhooksEvents = [
   'issue_comment.created',
   'issue_comment.edited'
 ];
-app.webhooks.on(webhooksEvents, async ({ octokit, payload }) => {
-  if (payload.repository.full_name === config.claRepo) {
-    // In the repository that collects CLA commitments, look at issues that are
-    // both closed and locked (typically happens after the list of CLA
-    // commitments gets updated).
-    // Note: the tool currently assumes that the maintainer validates the PR
-    // URL that appears in the issue. If that PR URL is wrong, the CLA checker
-    // will end up checking a PR that it's not supposed to look at.
-    // TODO: Look for all open PRs from the same contributor in the repository instead.
-    if (payload.issue &&
-        payload.issue.state === 'closed' &&
-        payload.issue?.locked &&
-        !['off-topic', 'too heated', 'spam'].includes(payload.issue.active_lock_reason)) {
-      log(`New locked issue in the CLA commitments repository`);
-      log(`- issue: ${payload.issue.html_url}`);
-      log(`- author: ${payload.issue.user.login}`);
+app.webhooks.on(webhooksEvents, async ({ octokit, payload }) =>
+  (payload.repository.full_name === config.claRepo) ?
+    handleCommitmentEvent(octokit, payload) :
+    handlePREvent(octokit, payload)
+);
 
-      const body = payload.issue.body;
-      const startPos = body.indexOf(config.claIssueAnchor);
-      if (startPos === -1) {
-        log('- could not find the project repository in the issue');
-        return;
-      }
-      const endPos = body.indexOf('###', startPos + config.claIssueAnchor.length);
-      const repositorySection = (endPos > 0) ?
-        body.substring(startPos + config.claIssueAnchor.length, endPos):
-        body.substring(startPos + config.claIssueAnchor.length);
-      const match = repositorySection.trim().match(/([^\s]+)\/([^\s]+)/);
-      if (!match) {
-        log('- could not find a repository in the project repository section');
-        log(repositorySection);
-        return;
-      }
-      const [, projectOwner, projectRepo] = match;
-      log(`- repository: ${projectOwner}/${projectRepo}`);
-
-      const pullRequests = await octokit.paginate(
-        octokit.rest.pulls.list,
-        { owner: projectOwner, repo: projectRepo, per_page: 100 },
-        response => response.data.filter(pr => pr.user.id === payload.issue.user.id)
-      );
-      log(`- found ${pullRequests} PRs created by ${payload.issue.user.login}`);
-      for (const pr of pullRequests) {
-        log(`- re-check PR: ${pr.html_url}`);
-        await checkPRContributor(pr, octokit);
-      }
-    }
-  }
-  else {
-    // In repositories that need CLA commitments, we're only interested in new
-    // pull requests in theory. The checker also handles new comments and
-    // editions to give maintainers a mechanism to revalidate a PR.
-    // Note: The checker skips over comments by itself since that typically
-    // means that it just added a need CLA comment.
-    if ((payload.pull_request || payload.issue?.pull_request) &&
-        (payload.sender.login !== config.appLogin)) {
-      log(`New PR event from ${payload.repository.full_name}`);
-      const pr = payload.pull_request?.html_url ??
-        payload.issue.pull_request.html_url;
-      log(`- PR: ${pr}`);
-      await checkPRContributor(pr, octokit);
-    }
-  }
-});
-
-// TODO: Handle errors
 app.webhooks.onError((error) => {
   log('An unexpected webhook error occurred');
   console.error(error);
@@ -193,8 +133,87 @@ http.createServer(middleware).listen(config.serverPort, () => {
 
 
 /******************************************************************************
- * Helper functions to check a pull request
+ * Helper functions
  *****************************************************************************/
+/**
+ * Handle an event that takes place in the repository that collects CLA
+ * commitments, typically events that end up with a closed and locked issue,
+ * which should signal that the list of CLA commitments got updated.
+ *
+ * Note: the tool currently assumes that the maintainer validates the repo URL
+ * that appears in the issue. If that URL is wrong, the CLA checker will end up
+ * looking into open PRs in a repository that it's not supposed to look at.
+ *
+ * TODO: consider checking the repository name against the list of repository
+ * installations (but not sure there's a way to get that info from the GitHub
+ * API).
+ */
+async function handleCommitmentEvent(octokit, payload) {
+  if (!payload.issue ||
+      !payload.issue.locked ||
+      payload.issue.state !== 'closed' ||
+      ['off-topic', 'too heated', 'spam'].includes(payload.issue.active_lock_reason)) {
+    return;
+  }
+
+  log(`New locked issue in the CLA commitments repository`);
+  log(`- issue: ${payload.issue.html_url}`);
+  log(`- author: ${payload.issue.user.login}`);
+
+  const body = payload.issue.body;
+  const startPos = body.indexOf(config.claIssueAnchor);
+  if (startPos === -1) {
+    log('- could not find the project repository in the issue');
+    return;
+  }
+  const endPos = body.indexOf('###', startPos + config.claIssueAnchor.length);
+  const repositorySection = (endPos > 0) ?
+    body.substring(startPos + config.claIssueAnchor.length, endPos):
+    body.substring(startPos + config.claIssueAnchor.length);
+  const match = repositorySection.trim().match(/([^\s]+)\/([^\s]+)/);
+  if (!match) {
+    log('- could not find a repository in the project repository section');
+    log(repositorySection);
+    return;
+  }
+  const [, projectOwner, projectRepo] = match;
+  log(`- repository: ${projectOwner}/${projectRepo}`);
+
+  const pullRequests = await octokit.paginate(
+    octokit.rest.pulls.list,
+    { owner: projectOwner, repo: projectRepo, per_page: 100 },
+    response => response.data.filter(pr => pr.user.id === payload.issue.user.id)
+  );
+  log(`- found ${pullRequests} PRs created by ${payload.issue.user.login}`);
+  for (const pr of pullRequests) {
+    log(`- re-check PR: ${pr.html_url}`);
+    await checkPRContributor(pr, octokit);
+  }
+}
+
+
+/**
+ * Handle an event that takes place in repositories that need CLA commitments,
+ * typically those that create or update a PR. Note updates actions are handled
+ * mainly as a way to give repository maintainers a mechanism to revalidate a
+ * PR.
+ *
+ * Note: The checker skips over comments by itself since that typically means
+ * that it just added a "need CLA" comment.
+ */
+async function handlePREvent(octokit, payload) {
+  if ((!payload.pull_request && !payload.issue?.pull_request) ||
+      (payload.sender.login === config.appLogin)) {
+    return;
+  }
+  log(`New PR event from ${payload.repository.full_name}`);
+  const pr = payload.pull_request?.html_url ??
+    payload.issue.pull_request.html_url;
+  log(`- PR: ${pr}`);
+  await checkPRContributor(pr, octokit);
+}
+
+
 /**
  * Make sure that the pull request identified by its URL is from a contributor
  * for whom we already collected a CLA commitment and flag the PR accordingly
