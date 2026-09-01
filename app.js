@@ -98,12 +98,17 @@ config.appLogin = appData.slug + '[bot]';
 // The list of possible events and related action types is documented at:
 // https://docs.github.com/en/webhooks/webhook-events-and-payloads
 const webhooksEvents = [
+  // Relevant issue events for the CLA commitments repo
   'issues.closed',
   'issues.locked',
+  // Relevant PR events for the repos that need CLA commitments
   'pull_request.opened',
   'pull_request.reopened',
   'pull_request.edited',
   'pull_request.synchronize',
+  'pull_request_review',
+  // PR comments are issue comments in practice,
+  // needed for the repos that need CLA commitments
   'issue_comment.created',
   'issue_comment.edited'
 ];
