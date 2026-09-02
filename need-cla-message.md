@@ -2,7 +2,7 @@
 
 Hi @{{username}},
 
-Thank you for your contribution. Before this pull request can be merged, you'll need to approve the project's Contributor License Agreement (CLA).
+Thank you for your contribution. Before this pull request can be merged, you'll need to agree with terms of the [W3C Open Source Individual Contributor License Agreement](https://www.w3.org/2026/07/w3c-open-source-icla.html) ("CLA").
 
 ➡️ [Approve the Contributor Agreement]({{approveClaUrl}})
 
