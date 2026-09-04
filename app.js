@@ -117,15 +117,25 @@ app.webhooks.onError((error) => {
 // Launch the web server to listen for GitHub webhooks
 const localWebhookUrl = `http://localhost:${config.serverPort}${config.webhookPath}`;
 
-const middleware = createNodeMiddleware(
+const webhookHandler = createNodeMiddleware(
   app.webhooks,
   { path: config.webhookPath }
 );
-http.createServer(middleware).listen(config.serverPort, () => {
-  console.log(`Server is listening for events at: ${localWebhookUrl}`);
-  console.log('Press Ctrl + C to quit.');
-  console.log();
-});
+http
+  .createServer((req, res) => {
+    if (req.url === '/' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ data: 'Greetings from the CLA checker!' }));
+    }
+    else {
+      webhookHandler(req, res);
+    }
+  })
+  .listen(config.serverPort, () => {
+    console.log(`Server is listening for events at: ${localWebhookUrl}`);
+    console.log('Press Ctrl + C to quit.');
+    console.log();
+  });
 
 
 /******************************************************************************
